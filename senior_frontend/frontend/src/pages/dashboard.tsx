@@ -1,18 +1,25 @@
+import { useState } from 'react';
 import { Header } from '@/components/header';
 import { IndicatorCard } from '@/components/indicator-card';
+import { DateRangePicker } from '@/components/date-range-picker';
 import { useIndicators } from '@/hooks/useIndicators';
 import { formatNumber } from '@/lib/utils';
+import { format } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
 
 export const Dashboard = () => {
-  const startDate = '2023-01-01';
-  const endDate = '2024-07-01';
   const indicators = ['total_revenue', 'co2_emissions', 'male_headcount', 'female_headcount'];
-  const { isPending, isError, data, error } = useIndicators(startDate, endDate, indicators);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(2023, 0, 1),
+    to: new Date(),
+  });
+  const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : '2023-01-01';
+  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : '2024-07-01';
 
+  const { isPending, isError, data, error } = useIndicators(startDate, endDate, indicators);
   if (isPending) {
     return <span>Loading...</span>;
   }
-
   if (isError) {
     return <span>Error: {error.message}</span>;
   }
@@ -34,6 +41,8 @@ export const Dashboard = () => {
       <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+
+          <DateRangePicker date={dateRange} onDateChange={setDateRange} />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <IndicatorCard
