@@ -7,10 +7,15 @@ import { useIndicators } from '@/hooks/useIndicators';
 import { formatNumber } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
+import { DimensionFilter } from '@/components/dimension-filter';
 
 export const Dashboard = () => {
   const indicators = ['total_revenue', 'co2_emissions', 'male_headcount', 'female_headcount'];
   const [granularity, setGranularity] = useState('monthly');
+  const [selectedDimensions, setSelectedDimensions] = useState<Record<string, string>>({
+    country: 'All Countries',
+    business_unit: 'All Business Units',
+  });
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2023, 0, 1),
     to: new Date(),
@@ -44,6 +49,7 @@ export const Dashboard = () => {
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <div className="flex items-center space-x-2">
+            <DimensionFilter selectedDimensions={selectedDimensions} onDimensionsChange={setSelectedDimensions} />
             <GranularitySelector value={granularity} onChange={setGranularity} />
             <DateRangePicker date={dateRange} onDateChange={setDateRange} />
           </div>
