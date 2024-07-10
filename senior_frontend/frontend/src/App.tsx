@@ -1,12 +1,7 @@
-import { Button } from './components/ui/button';
+import { Dashboard } from './pages/dashboard';
 
 function App() {
-  return (
-    <div className="container">
-      <h1 className="container text-blue-500 underline">Hello world!</h1>
-      <Button>Button</Button>
-    </div>
-  );
+  return <Dashboard />;
 }
 
 export default App;
