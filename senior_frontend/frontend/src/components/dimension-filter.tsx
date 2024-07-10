@@ -19,7 +19,7 @@ export const DimensionFilter = ({ selectedDimensions, onDimensionsChange }: Dime
   return (
     <>
       <Select defaultValue="All Countries" onValueChange={(value) => handleChange('country', value)}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="hidden sm:flex w-full">
           <SelectValue placeholder="Country" />
         </SelectTrigger>
         <SelectContent>
@@ -32,7 +32,7 @@ export const DimensionFilter = ({ selectedDimensions, onDimensionsChange }: Dime
         </SelectContent>
       </Select>
       <Select defaultValue="All Business Units" onValueChange={(value) => handleChange('business_unit', value)}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="hidden sm:flex w-full">
           <SelectValue placeholder="Business Unit" />
         </SelectTrigger>
         <SelectContent>

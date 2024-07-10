@@ -51,7 +51,7 @@ export const Dashboard = () => {
           <div className="flex items-center space-x-2">
             <DimensionFilter selectedDimensions={selectedDimensions} onDimensionsChange={setSelectedDimensions} />
             <GranularitySelector value={granularity} onChange={setGranularity} />
-            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+            <DateRangePicker date={dateRange} onDateChange={setDateRange} className="hidden lg:flex" />
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
