@@ -1,46 +1,77 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+import { formatNumber } from '@/lib/utils';
+import { useIndicators } from '@/hooks/useIndicators';
+import { useDimensions } from '@/hooks/useDimensions';
 import { Header } from '@/components/header';
 import { IndicatorCard } from '@/components/indicator-card';
 import { DateRangePicker } from '@/components/date-range-picker';
 import { GranularitySelector } from '@/components/granularity-selector';
-import { useIndicators } from '@/hooks/useIndicators';
-import { formatNumber } from '@/lib/utils';
-import { format } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
 import { DimensionFilter } from '@/components/dimension-filter';
 
 export const Dashboard = () => {
-  const indicators = ['total_revenue', 'co2_emissions', 'male_headcount', 'female_headcount'];
-  const [granularity, setGranularity] = useState('monthly');
-  const [selectedDimensions, setSelectedDimensions] = useState<Record<string, string>>({
-    country: 'All Countries',
-    business_unit: 'All Business Units',
-  });
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2023, 0, 1),
-    to: new Date(),
+    to: new Date(2023, 1, 1),
   });
+  const [granularity, setGranularity] = useState('monthly');
+  const [selectedCountry, setSelectedCountry] = useState('All Countries');
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState('All Business Units');
+
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : '2023-01-01';
-  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : '2024-07-01';
+  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : '2024-01-01';
 
-  const { isPending, isError, data, error } = useIndicators(startDate, endDate, indicators);
-  if (isPending) {
-    return <span>Loading...</span>;
-  }
-  if (isError) {
-    return <span>Error: {error.message}</span>;
-  }
+  const indicators = ['total_revenue', 'co2_emissions', 'male_headcount', 'female_headcount'];
 
-  const totalRevenue =
-    data?.filter((item) => item.indicator === 'total_revenue').reduce((sum, item) => sum + item.value, 0) || 0;
-  const totalCO2 =
-    data?.filter((item) => item.indicator === 'co2_emissions').reduce((sum, item) => sum + item.value, 0) || 0;
-  const maleHeadcount =
-    data?.filter((item) => item.indicator === 'male_headcount').reduce((sum, item) => sum + item.value, 0) || 0;
-  const femaleHeadcount =
-    data?.filter((item) => item.indicator === 'female_headcount').reduce((sum, item) => sum + item.value, 0) || 0;
-  const totalHeadcount = maleHeadcount + femaleHeadcount;
-  const genderParityRatio = totalHeadcount > 0 ? femaleHeadcount / totalHeadcount : 0;
+  const { data: indicatorsData, isLoading: isLoadingIndicators } = useIndicators(startDate, endDate, indicators);
+  const { data: dimensions, isLoading: isLoadingDimensions } = useDimensions();
+
+  const filteredData = useMemo(() => {
+    if (!indicatorsData || !dimensions) return [];
+    return indicatorsData.filter((item) => {
+      const dimension = dimensions.find((d) => d.id === item.dimension);
+      return (
+        (selectedCountry === 'All Countries' || dimension?.country === selectedCountry) &&
+        (selectedBusinessUnit === 'All Business Units' || dimension?.business_unit === selectedBusinessUnit)
+      );
+    });
+  }, [indicatorsData, dimensions, selectedCountry, selectedBusinessUnit]);
+
+  const totalRevenue = useMemo(
+    () => filteredData.filter((item) => item.indicator === 'total_revenue').reduce((sum, item) => sum + item.value, 0),
+    [filteredData]
+  );
+
+  const totalCO2 = useMemo(
+    () => filteredData.filter((item) => item.indicator === 'co2_emissions').reduce((sum, item) => sum + item.value, 0),
+    [filteredData]
+  );
+
+  const totalHeadcount = useMemo(() => {
+    const maleHeadcount = filteredData
+      .filter((item) => item.indicator === 'male_headcount')
+      .reduce((sum, item) => sum + item.value, 0);
+    const femaleHeadcount = filteredData
+      .filter((item) => item.indicator === 'female_headcount')
+      .reduce((sum, item) => sum + item.value, 0);
+    return maleHeadcount + femaleHeadcount;
+  }, [filteredData]);
+
+  const genderParityRatio = useMemo(() => {
+    const femaleHeadcount = filteredData
+      .filter((item) => item.indicator === 'female_headcount')
+      .reduce((sum, item) => sum + item.value, 0);
+    return totalHeadcount > 0 ? femaleHeadcount / totalHeadcount : 0;
+  }, [filteredData, totalHeadcount]);
+
+  const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
+    setDateRange(newDateRange);
+  };
+
+  if (isLoadingIndicators || isLoadingDimensions) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <main className="relative container max-w-screen-2xl">
@@ -48,15 +79,23 @@ export const Dashboard = () => {
       <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <div className="flex items-center space-x-2">
-            <DimensionFilter selectedDimensions={selectedDimensions} onDimensionsChange={setSelectedDimensions} />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="hidden md:flex space-x-4">
             <GranularitySelector value={granularity} onChange={setGranularity} />
-            <DateRangePicker date={dateRange} onDateChange={setDateRange} className="hidden lg:flex" />
+            <DimensionFilter
+              selectedCountry={selectedCountry}
+              selectedBusinessUnit={selectedBusinessUnit}
+              onCountryChange={setSelectedCountry}
+              onBusinessUnitChange={setSelectedBusinessUnit}
+              dimensions={dimensions || []}
+            />
           </div>
+          <DateRangePicker date={dateRange} onDateChange={handleDateRangeChange} className="hidden lg:flex" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <IndicatorCard
-            title="total revenue"
+            title="Total Revenue"
             value={formatNumber(totalRevenue, 'currency')}
             icon={
               <svg
@@ -74,7 +113,7 @@ export const Dashboard = () => {
             }
           />
           <IndicatorCard
-            title="total CO₂ emissions"
+            title="Total CO₂ Emissions"
             value={formatNumber(totalCO2, 'number')}
             description=" kg"
             icon={
@@ -95,7 +134,7 @@ export const Dashboard = () => {
             }
           />
           <IndicatorCard
-            title="total headcount"
+            title="Total Headcount"
             value={formatNumber(totalHeadcount, 'number')}
             icon={
               <svg
@@ -115,7 +154,7 @@ export const Dashboard = () => {
             }
           />
           <IndicatorCard
-            title="gender parity ratio"
+            title="Gender Parity Ratio"
             value={formatNumber(genderParityRatio, 'percent')}
             icon={
               <svg
