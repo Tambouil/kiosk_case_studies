@@ -8,7 +8,7 @@ interface GranularitySelectorProps {
 export const GranularitySelector = ({ value, onChange }: GranularitySelectorProps) => {
   return (
     <Select defaultValue={value} onValueChange={onChange}>
-      <SelectTrigger className="hidden lg:flex w-full">
+      <SelectTrigger className="w-full">
         <SelectValue placeholder="Toggle granularity" />
       </SelectTrigger>
       <SelectContent>
