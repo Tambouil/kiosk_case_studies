@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { formatNumber } from '@/lib/utils';
-import { useIndicators } from '@/hooks/useIndicators';
-import { useDimensions } from '@/hooks/useDimensions';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { Header } from '@/components/header';
 import { IndicatorCard } from '@/components/indicator-card';
 import { DateRangePicker } from '@/components/date-range-picker';
@@ -23,54 +22,18 @@ export const Dashboard = () => {
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : '2023-01-01';
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : '2024-01-01';
 
-  const indicators = ['total_revenue', 'co2_emissions', 'male_headcount', 'female_headcount'];
-
-  const { data: indicatorsData, isLoading: isLoadingIndicators } = useIndicators(startDate, endDate, indicators);
-  const { data: dimensions, isLoading: isLoadingDimensions } = useDimensions();
-
-  const filteredData = useMemo(() => {
-    if (!indicatorsData || !dimensions) return [];
-    return indicatorsData.filter((item) => {
-      const dimension = dimensions.find((d) => d.id === item.dimension);
-      return (
-        (selectedCountry === 'All Countries' || dimension?.country === selectedCountry) &&
-        (selectedBusinessUnit === 'All Business Units' || dimension?.business_unit === selectedBusinessUnit)
-      );
-    });
-  }, [indicatorsData, dimensions, selectedCountry, selectedBusinessUnit]);
-
-  const totalRevenue = useMemo(
-    () => filteredData.filter((item) => item.indicator === 'total_revenue').reduce((sum, item) => sum + item.value, 0),
-    [filteredData]
+  const { isLoading, totalRevenue, totalCO2, totalHeadcount, genderParityRatio, dimensions } = useDashboardData(
+    startDate,
+    endDate,
+    selectedCountry,
+    selectedBusinessUnit
   );
-
-  const totalCO2 = useMemo(
-    () => filteredData.filter((item) => item.indicator === 'co2_emissions').reduce((sum, item) => sum + item.value, 0),
-    [filteredData]
-  );
-
-  const totalHeadcount = useMemo(() => {
-    const maleHeadcount = filteredData
-      .filter((item) => item.indicator === 'male_headcount')
-      .reduce((sum, item) => sum + item.value, 0);
-    const femaleHeadcount = filteredData
-      .filter((item) => item.indicator === 'female_headcount')
-      .reduce((sum, item) => sum + item.value, 0);
-    return maleHeadcount + femaleHeadcount;
-  }, [filteredData]);
-
-  const genderParityRatio = useMemo(() => {
-    const femaleHeadcount = filteredData
-      .filter((item) => item.indicator === 'female_headcount')
-      .reduce((sum, item) => sum + item.value, 0);
-    return totalHeadcount > 0 ? femaleHeadcount / totalHeadcount : 0;
-  }, [filteredData, totalHeadcount]);
 
   const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
     setDateRange(newDateRange);
   };
 
-  if (isLoadingIndicators || isLoadingDimensions) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
